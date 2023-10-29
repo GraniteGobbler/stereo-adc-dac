@@ -28,6 +28,7 @@ static const char *TAG = "example";
 const uint8_t hid_report_descriptor[] = {
     TUD_HID_REPORT_DESC_KEYBOARD(HID_REPORT_ID(HID_ITF_PROTOCOL_KEYBOARD) ),
     TUD_HID_REPORT_DESC_MOUSE(HID_REPORT_ID(HID_ITF_PROTOCOL_MOUSE) )
+
 };
 
 /**
@@ -95,7 +96,7 @@ typedef enum {
     MOUSE_DIR_MAX,
 } mouse_dir_t;
 
-#define DISTANCE_MAX        125
+#define DISTANCE_MAX        500 //125
 #define DELTA_SCALAR        5
 
 static void mouse_draw_square_next_delta(int8_t *delta_x_ret, int8_t *delta_y_ret)
