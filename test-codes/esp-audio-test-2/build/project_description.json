@@ -1,7 +1,7 @@
 {
     "version":            "1",
     "project_name":       "esp-audio-test-2",
-    "project_version":    "f10879d-dirty",
+    "project_version":    "b2f9355-dirty",
     "project_path":       "C:/Users/chris/Documents/stereo-adc-dac/test-codes/esp-audio-test-2",
     "idf_path":           "C:/Users/chris/esp/esp-idf",
     "build_dir":          "C:/Users/chris/Documents/stereo-adc-dac/test-codes/esp-audio-test-2/build",
@@ -816,11 +816,11 @@
             "type": "LIBRARY",
             "lib": "__idf_main",
             "reqs": [ "driver" ],
-            "priv_reqs": [ "espressif__esp_tinyusb" ],
+            "priv_reqs": [ "espressif__esp_tinyusb", "espressif__tinyusb" ],
             "managed_reqs": [],
-            "managed_priv_reqs": [ "espressif__esp_tinyusb" ],
+            "managed_priv_reqs": [ "espressif__esp_tinyusb", "espressif__tinyusb" ],
             "file": "C:/Users/chris/Documents/stereo-adc-dac/test-codes/esp-audio-test-2/build/esp-idf/main/libmain.a",
-            "sources": [ "C:/Users/chris/Documents/stereo-adc-dac/test-codes/esp-audio-test-2/main/tusb_hid_example_main.c" ],
+            "sources": [ "C:/Users/chris/Documents/stereo-adc-dac/test-codes/esp-audio-test-2/main/audio_main.c" ],
             "include_dirs": [ "." ]
         },
         "mbedtls": {
