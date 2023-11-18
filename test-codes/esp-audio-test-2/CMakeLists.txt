@@ -6,4 +6,4 @@ cmake_minimum_required(VERSION 3.16)
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(esp-audio-test-2)
-include($PROJECT_PATH/tinyusb/src/)
+

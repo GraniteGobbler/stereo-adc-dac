@@ -15,5 +15,7 @@
     "idf.toolsPathWin": "C:\\Users\\chris\\.espressif",
     "C_Cpp.default.compilerPath": "C:\\Users\\chris\\.espressif\\tools\\xtensa-esp32-elf\\esp-12.2.0_20230208\\xtensa-esp32-elf\\bin\\xtensa-esp32-elf-gcc.exe",
     "idf.flashType": "UART",
-    "idf.portWin": "COM4"
+    "idf.portWin": "COM4",
+    
+       
 }
