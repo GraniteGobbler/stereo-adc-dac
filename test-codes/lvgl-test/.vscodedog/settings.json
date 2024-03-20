@@ -1,0 +1,31 @@
+{
+    "C_Cpp.intelliSenseEngine": "tag parser",
+    "idf.adapterTargetName": "esp32s3",
+    "idf.customExtraPaths": "/Users/filipszkandera/.espressif/tools/xtensa-esp-elf-gdb/11.2_20220823/xtensa-esp-elf-gdb/bin:/Users/filipszkandera/.espressif/tools/riscv32-esp-elf-gdb/11.2_20220823/riscv32-esp-elf-gdb/bin:/Users/filipszkandera/.espressif/tools/xtensa-esp32-elf/esp-2022r1-11.2.0/xtensa-esp32-elf/bin:/Users/filipszkandera/.espressif/tools/xtensa-esp32s2-elf/esp-2022r1-11.2.0/xtensa-esp32s2-elf/bin:/Users/filipszkandera/.espressif/tools/xtensa-esp32s3-elf/esp-2022r1-11.2.0/xtensa-esp32s3-elf/bin:/Users/filipszkandera/.espressif/tools/riscv32-esp-elf/esp-2022r1-11.2.0/riscv32-esp-elf/bin:/Users/filipszkandera/.espressif/tools/esp32ulp-elf/2.35_20220830/esp32ulp-elf/bin:/Users/filipszkandera/.espressif/tools/cmake/3.24.0/CMake.app/Contents/bin:/Users/filipszkandera/.espressif/tools/openocd-esp32/v0.11.0-esp32-20221026/openocd-esp32/bin:/Users/filipszkandera/.espressif/tools/ninja/1.10.2:/Users/filipszkandera/.espressif/tools/esp-rom-elfs/20220823",
+    "idf.customExtraVars": {
+        "OPENOCD_SCRIPTS": "/Users/filipszkandera/.espressif/tools/openocd-esp32/v0.11.0-esp32-20221026/openocd-esp32/share/openocd/scripts",
+        "ESP_ROM_ELF_DIR": "/Users/filipszkandera/.espressif/tools/esp-rom-elfs/20220823/"
+    },
+    "idf.espIdfPath": "/Users/filipszkandera/esp5/esp-idf",
+    "idf.openOcdConfigs": [
+        "interface/ftdi/esp32_devkitj_v1.cfg",
+        "target/esp32s3.cfg"
+    ],
+    "idf.port": "/dev/cu.usbmodem1101",
+    "idf.pythonBinPath": "/Users/filipszkandera/.espressif/python_env/idf5.0_py3.9_env/bin/python",
+    "idf.toolsPath": "/Users/filipszkandera/.espressif",
+    "files.associations": {
+        "lvgl_helpers.h": "c",
+        "spi_hal.h": "c",
+        "lvgl.h": "c",
+        "touch_driver.h": "c",
+        "sdkconfig.h": "c",
+        "esp_system.h": "c",
+        "stdbool.h": "c",
+        "display_init.h": "c",
+        "spi_master.h": "c",
+        "task.h": "c",
+        "time.h": "c",
+        "gpio.h": "c"
+    }
+}
