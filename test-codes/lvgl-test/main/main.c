@@ -18,6 +18,7 @@
 
 #include "lvgl.h"
 #include "display_init/display_init.h"
+#include "../ui.c"
 
 
 
@@ -51,6 +52,7 @@ void app_main() {
 
     if (pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)) {
 
+        // ui_init();
         /*------- Init screens -------*/
         ui_main_screen = lv_obj_create(NULL);
         lv_obj_set_size(ui_main_screen, SCREEN_HOR_RES, SCREEN_VER_RES);
