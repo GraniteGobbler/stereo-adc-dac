@@ -1,0 +1,10 @@
+idf_component_register(SRCS     "main.c" 
+                                "display_init/display_init.c" 
+                                "../screens/ui_Screen1.c"
+                                # "../screens/ui_basic.c"
+                                "../ui.c"
+                                "../components/ui_comp_hook.c"
+                                "../ui_helpers.c"
+                                # "../ui_events.c"
+                                "../images/ui_img_logo_png.c"
+                        INCLUDE_DIRS ".")
