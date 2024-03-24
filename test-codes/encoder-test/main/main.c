@@ -13,12 +13,18 @@
 #define RE0_BTN_GPIO 13
 
 #elif HELPER_TARGET_IS_ESP32
-#define RE0_A_GPIO   9
-#define RE0_B_GPIO   10
-#define RE0_BTN_GPIO 11
-#define RE1_A_GPIO   12
-#define RE1_B_GPIO   13
-#define RE1_BTN_GPIO 14
+// #define RE0_A_GPIO   9
+// #define RE0_B_GPIO   10
+// #define RE0_BTN_GPIO 11
+// #define RE1_A_GPIO   12
+// #define RE1_B_GPIO   13
+// #define RE1_BTN_GPIO 14
+#define RE0_A_GPIO   42
+#define RE0_B_GPIO   41
+#define RE0_BTN_GPIO 40
+#define RE1_A_GPIO   39
+#define RE1_B_GPIO   38
+#define RE1_BTN_GPIO 37
 
 #else
 #error Unknown platform
