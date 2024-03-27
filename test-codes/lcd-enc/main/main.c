@@ -187,6 +187,7 @@ void test(void *arg)
 }
 
 
+
 void app_main() {
 
     xTaskCreate(test, TAG, configMINIMAL_STACK_SIZE * 8, NULL, 5, NULL);
@@ -205,6 +206,8 @@ void app_main() {
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
 
+
+    
     while (true) {
         // ESP_LOGI("MAIN", "\n");
 
@@ -220,14 +223,8 @@ void app_main() {
             if (menuCon.id == 0 && menuCon.scroller == 1){      // Selecting "Filter Type" entry
                 menuCon.id = 1;
                 menuCon.scroller = 0;
-
-                // while (true){
-                //     lv_label_set_text(ui_Label2, &entries.filtType[menuCon.scroller]);
-                //     // ESP_LOGI("Filter Type:", "%s\n", &entries.filtType[menuCon.scroller]);
-                //     vTaskDelay(pdMS_TO_TICKS(1000));
-
-                // }
             }
+            
         }
         
         vTaskDelay(pdMS_TO_TICKS(250));
