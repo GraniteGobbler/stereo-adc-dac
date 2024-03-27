@@ -1,5 +1,0 @@
-## IDF Component Manager Manifest File
-dependencies:
-  espressif/esp_tinyusb: "^1.1"
-  idf: "^5.0"
-  tinyusb: "~0.15.0~3" # Automatically update bugfix releases. TinyUSB does not guarantee backward compatibility
