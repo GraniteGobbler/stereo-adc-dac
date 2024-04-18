@@ -127,14 +127,16 @@
 /*          Vars            */
 static uint8_t rx_data[1] = {0};
 static uint8_t buf[2] = {0,0};
-static uint8_t scan_regs[12] = {0x72,0x73,0x74,0x75,0x78,0x20,
-                                0x70,0x06,0x07,0x08,0x09,0x0B};
+static uint8_t scan_regs[14] = {0x72,0x73,0x74,0x75,0x78,0x20,
+                                0x70,0x06,0x07,0x08,0x09,0x0B,0x01,0x02};
 static uint8_t ADCwake[2] = {0x20,0x11};
 static uint8_t ADC1_L[2] = {0x06,0x50};     // Enable differential 
 static uint8_t ADC1_R[2] = {0x07,0x50};     // channels L/R on ADC1
 static uint8_t ADC2_L[2] = {0x08,0x40};     // Disable ADC2 inputs
 static uint8_t ADC2_R[2] = {0x09,0x40};     
 static uint8_t ADC_data_format[2] = {0x0B,0x00};    // Set RX/TX to 32bit, I2S format     
+static uint8_t ADC_gain_L[2] = {0x01,0x0C}; // 6 dB gain
+static uint8_t ADC_gain_R[2] = {0x02,0x0C}; // 6 dB gain
 
 /*          Funcs           */
 void pcm1862_init(){
@@ -152,6 +154,8 @@ void pcm1862_init(){
 
     ESP_ERROR_CHECK(i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, 0, 0, 0));
 
+    i2c_master_write_to_device(I2C_NUM_0, I2C_SLAVE_ADDR, ADC_gain_L, sizeof(buf), pdMS_TO_TICKS(TIMEOUT_MS));
+    i2c_master_write_to_device(I2C_NUM_0, I2C_SLAVE_ADDR, ADC_gain_R, sizeof(buf), pdMS_TO_TICKS(TIMEOUT_MS));
     i2c_master_write_to_device(I2C_NUM_0, I2C_SLAVE_ADDR, ADCwake, sizeof(buf), pdMS_TO_TICKS(TIMEOUT_MS));
     i2c_master_write_to_device(I2C_NUM_0, I2C_SLAVE_ADDR, ADC1_L, sizeof(buf), pdMS_TO_TICKS(TIMEOUT_MS));
     i2c_master_write_to_device(I2C_NUM_0, I2C_SLAVE_ADDR, ADC1_R, sizeof(buf), pdMS_TO_TICKS(TIMEOUT_MS));

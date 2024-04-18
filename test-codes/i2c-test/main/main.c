@@ -10,13 +10,17 @@ void app_main()
 
     while (1) {
       
-        for(int i = 0; i < 12; i++){
+        for(int i = 0; i < 14; i++){
             i2c_master_write_read_device(I2C_NUM_0, I2C_SLAVE_ADDR, &scan_regs[i], 1U, rx_data, sizeof(rx_data), pdMS_TO_TICKS(TIMEOUT_MS));
-            vTaskDelay(pdMS_TO_TICKS(DELAY_MS)); 
+            vTaskDelay(pdMS_TO_TICKS(DELAY_MS));
+            ESP_LOG_BUFFER_HEX(TAG, rx_data, sizeof(rx_data));
+            // vTaskDelay(pdMS_TO_TICKS(DELAY_MS));
         }
 
-        ESP_LOG_BUFFER_HEX(TAG, rx_data, sizeof(rx_data));
-        vTaskDelay(pdMS_TO_TICKS(DELAY_MS)); 
+        ESP_LOGI(TAG,"#########\n");
+
+        // ESP_LOG_BUFFER_HEX(TAG, rx_data, sizeof(rx_data));
+        // vTaskDelay(pdMS_TO_TICKS(DELAY_MS)); 
     }
 }
 

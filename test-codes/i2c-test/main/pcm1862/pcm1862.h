@@ -8,8 +8,8 @@
 
 /*          Defines         */
 #define I2C_SLAVE_ADDR  0x4A
-#define TIMEOUT_MS      2000
-#define DELAY_MS        2000
+#define TIMEOUT_MS      1000
+#define DELAY_MS        1000
 
 /*          Prototypes      */
 
