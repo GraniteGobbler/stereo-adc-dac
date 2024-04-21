@@ -2,4 +2,4 @@
 
 C code project for ESP32-S3
 
-![PCB](./boban.heic "PCB")
+![PCB](./img/boban.jpg "PCB")
