@@ -47,8 +47,9 @@ static const char *TAG = "I2S TEST";
 #endif
 
 #define EXAMPLE_BUFF_SIZE               2048
+#define DATA_QUEUE_LEN                  3
 
-
+static QueueHandle_t                    data_queue;     // I2S data queue (read, process, write)
 static i2s_chan_handle_t                tx_chan;        // I2S tx channel handler
 static i2s_chan_handle_t                rx_chan;        // I2S rx channel handler
 
@@ -75,6 +76,9 @@ static void i2s_example_read_task(void *args)
         }
         vTaskDelay(pdMS_TO_TICKS(200));
     }
+
+    xQueueSendToBack(data_queue, &r_buf, 1);   // Send read buffer to data_queue front
+
     free(r_buf);
     vTaskDelete(NULL);
 }
@@ -83,7 +87,8 @@ static void i2s_example_write_task(void *args)
 {
     uint8_t *w_buf = (uint8_t *)calloc(1, EXAMPLE_BUFF_SIZE);
     assert(w_buf); // Check if w_buf allocation success
-    
+
+    xQueueReceive(data_queue, &w_buf, 1);
 
     /* Assign w_buf */
     // for (int i = 0; i < EXAMPLE_BUFF_SIZE; i += 8) {
@@ -152,6 +157,9 @@ static void i2s_example_init_std_duplex(void)
     /* Initialize the channels */
     ESP_ERROR_CHECK(i2s_channel_init_std_mode(tx_chan, &std_cfg));
     ESP_ERROR_CHECK(i2s_channel_init_std_mode(rx_chan, &std_cfg));
+
+    // Create event queue for I2S data
+    data_queue = xQueueCreate(DATA_QUEUE_LEN, EXAMPLE_BUFF_SIZE);
 }
 
 #else
@@ -228,18 +236,18 @@ void app_main(void)
 
     pcm1862_init();    
 
-    while (1) {
+    // while (1) {
       
-        for(int i = 0; i < 14; i++){
-            i2c_master_write_read_device(I2C_NUM_0, I2C_SLAVE_ADDR, &scan_regs[i], 1U, rx_data, sizeof(rx_data), pdMS_TO_TICKS(TIMEOUT_MS));
-            vTaskDelay(pdMS_TO_TICKS(DELAY_MS));
-            ESP_LOG_BUFFER_HEX(TAG, rx_data, sizeof(rx_data));
-            // vTaskDelay(pdMS_TO_TICKS(DELAY_MS));
-        }
+    //     for(int i = 0; i < 14; i++){
+    //         i2c_master_write_read_device(I2C_NUM_0, I2C_SLAVE_ADDR, &scan_regs[i], 1U, rx_data, sizeof(rx_data), pdMS_TO_TICKS(TIMEOUT_MS));
+    //         vTaskDelay(pdMS_TO_TICKS(DELAY_MS));
+    //         ESP_LOG_BUFFER_HEX(TAG, rx_data, sizeof(rx_data));
+    //         // vTaskDelay(pdMS_TO_TICKS(DELAY_MS));
+    //     }
 
-        ESP_LOGI(TAG,"#########\n");
+    //     ESP_LOGI(TAG,"#########\n");
 
-        // ESP_LOG_BUFFER_HEX(TAG, rx_data, sizeof(rx_data));
-        // vTaskDelay(pdMS_TO_TICKS(DELAY_MS)); 
-    }
+    //     // ESP_LOG_BUFFER_HEX(TAG, rx_data, sizeof(rx_data));
+    //     // vTaskDelay(pdMS_TO_TICKS(DELAY_MS)); 
+    // }
 }
