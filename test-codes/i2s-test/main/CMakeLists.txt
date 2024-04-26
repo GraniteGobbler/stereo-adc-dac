@@ -1,2 +1,4 @@
-idf_component_register(SRCS "i2s_std_example_main.c"
+idf_component_register(SRCS "main.c"
+                            "./IFX_PeakingFilter/IFX_PeakingFilter.c"
+                            
                     INCLUDE_DIRS ".")

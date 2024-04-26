@@ -12,7 +12,8 @@
 #include "driver/gpio.h"
 #include "esp_check.h"
 #include "sdkconfig.h"
-#include <./pcm1862/pcm1862.c>
+#include "./pcm1862/pcm1862.c"
+#include "./IFX_PeakingFilter/IFX_PeakingFilter.h"
 
 static const char *TAG = "I2S TEST";
 
@@ -46,12 +47,23 @@ static const char *TAG = "I2S TEST";
     #endif
 #endif
 
+#define SAMPLE_RATE_HZ_F                96000.0f
+#define SAMPLE_RATE_HZ                  96000
+
 #define EXAMPLE_BUFF_SIZE               2048
 #define DATA_QUEUE_LEN                  3
 
-static QueueHandle_t                    data_queue;     // I2S data queue (read, process, write)
+static QueueHandle_t                    read_queue;     // I2S read queue
+static QueueHandle_t                    write_queue;    // I2S write queue
 static i2s_chan_handle_t                tx_chan;        // I2S tx channel handler
 static i2s_chan_handle_t                rx_chan;        // I2S rx channel handler
+static IFX_PeakingFilter                peak_filt;      // Peaking Filter struct
+
+float outVolume             =   1.0f;
+float centerFrequency_Hz    =   1.0f;
+float bandwidth_Hz          =   0.0f; 
+float boostCut_linear       =   1.0f;
+
 
 static void i2s_example_read_task(void *args)
 {
@@ -77,18 +89,62 @@ static void i2s_example_read_task(void *args)
         vTaskDelay(pdMS_TO_TICKS(200));
     }
 
-    xQueueSendToBack(data_queue, &r_buf, 1);   // Send read buffer to data_queue front
+    xQueueSendToBack(read_queue, &r_buf, 1);   // Send read buffer to data_queue front
 
     free(r_buf);
     vTaskDelete(NULL);
 }
+
+
+/*  Digital filtering function from Phil's Lab #89  */
+static void digital_filter_task(void *args){
+
+    uint8_t *filtIN_buf = (uint8_t *)calloc(1, EXAMPLE_BUFF_SIZE);
+    assert(filtIN_buf); // Check if filtIN_buf allocation success
+    uint8_t *filtOUT_buf = (uint8_t *)calloc(1, EXAMPLE_BUFF_SIZE);
+    assert(filtOUT_buf); // Check if filtOUT_buf allocation success
+
+    static float leftIn, rightIn;
+    static float leftProcessed, rightProcessed;
+    static float leftOut, rightOut;
+    // static float Out;
+
+    xQueueReceive(read_queue, &filtIN_buf, 1);
+
+    for (uint16_t n = 0; n < (EXAMPLE_BUFF_SIZE/2) - 1; n += 2){
+        
+        /* // Convert uint_8 to float     UINT8_TO_FLOAT *  */
+        leftIn = ((float) filtIN_buf[n]);            
+        rightIn = ((float) filtIN_buf[n+1]);
+        
+        leftProcessed = IFX_PeakingFilter_Update(&peak_filt, leftIn);
+        rightProcessed = IFX_PeakingFilter_Update(&peak_filt, rightIn);
+        
+        /* // Convert float to uint_8      FLOAT_TO_UINT8 *  */
+        leftOut = (uint8_t) (outVolume * leftProcessed);    
+        rightOut = (uint8_t) (outVolume * rightProcessed);
+
+        /* Set output buffer samples */
+        filtOUT_buf[n]   = leftOut;
+        filtOUT_buf[n+1] = rightOut;
+
+    }
+    
+    xQueueSendToBack(write_queue, &filtOUT_buf, 1);
+
+    free(filtIN_buf);
+    free(filtOUT_buf);
+    vTaskDelete(NULL);
+}
+
 
 static void i2s_example_write_task(void *args)
 {
     uint8_t *w_buf = (uint8_t *)calloc(1, EXAMPLE_BUFF_SIZE);
     assert(w_buf); // Check if w_buf allocation success
 
-    xQueueReceive(data_queue, &w_buf, 1);
+    xQueueReceive(read_queue, &w_buf, 1);       // No filter output
+    // xQueueReceive(write_queue, &w_buf, 1);      // Filtered output
 
     /* Assign w_buf */
     // for (int i = 0; i < EXAMPLE_BUFF_SIZE; i += 8) {
@@ -125,6 +181,25 @@ static void i2s_example_write_task(void *args)
     vTaskDelete(NULL);
 }
 
+
+
+
+//############################################//
+//############################################//
+//############################################//
+////    Callback for encoder value change   ////
+////                                        ////
+void boban(){
+    IFX_PeakingFilter_SetParameters(&peak_filt, centerFrequency_Hz, bandwidth_Hz, boostCut_linear);
+}
+////                                        ////
+//############################################//
+//############################################//
+//############################################//
+
+
+
+
 #if EXAMPLE_I2S_DUPLEX_MODE
 static void i2s_example_init_std_duplex(void)
 {
@@ -139,7 +214,7 @@ static void i2s_example_init_std_duplex(void)
      * These two helper macros is defined in 'i2s_std.h' which can only be used in STD mode.
      * They can help to specify the slot and clock configurations for initialization or re-configuring */
     i2s_std_config_t std_cfg = {
-        .clk_cfg  = I2S_STD_CLK_DEFAULT_CONFIG(96000),
+        .clk_cfg  = I2S_STD_CLK_DEFAULT_CONFIG(SAMPLE_RATE_HZ),
         .slot_cfg = I2S_STD_MSB_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_32BIT, I2S_SLOT_MODE_STEREO),
         .gpio_cfg = {
             .mclk = I2S_GPIO_UNUSED,    // some codecs may require mclk signal, this example doesn't need it
@@ -159,7 +234,8 @@ static void i2s_example_init_std_duplex(void)
     ESP_ERROR_CHECK(i2s_channel_init_std_mode(rx_chan, &std_cfg));
 
     // Create event queue for I2S data
-    data_queue = xQueueCreate(DATA_QUEUE_LEN, EXAMPLE_BUFF_SIZE);
+    read_queue = xQueueCreate(DATA_QUEUE_LEN, EXAMPLE_BUFF_SIZE);
+    write_queue = xQueueCreate(DATA_QUEUE_LEN, EXAMPLE_BUFF_SIZE);
 }
 
 #else
@@ -231,10 +307,13 @@ void app_main(void)
 
     /* Step 3: Create writing and reading task, enable and start the channels */
     xTaskCreate(i2s_example_read_task, "i2s_example_read_task", 4096, NULL, 5, NULL);
+    xTaskCreate(digital_filter_task, "digital_filter_task", 4096, NULL, 5, NULL);
     xTaskCreate(i2s_example_write_task, "i2s_example_write_task", 4096, NULL, 5, NULL);
 
-
     pcm1862_init();    
+
+    IFX_PeakingFilter_Init(&peak_filt, SAMPLE_RATE_HZ_F);
+
 
     // while (1) {
       
