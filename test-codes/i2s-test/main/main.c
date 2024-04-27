@@ -35,10 +35,10 @@ static const char *TAG = "I2S TEST";
         #define EXAMPLE_STD_DIN_IO2     GPIO_NUM_26     // I2S data in io number
     #endif
 #else
-    #define EXAMPLE_STD_BCLK_IO1        GPIO_NUM_42      // I2S bit clock io number
-    #define EXAMPLE_STD_WS_IO1          GPIO_NUM_41      // I2S word select io number
-    #define EXAMPLE_STD_DOUT_IO1        GPIO_NUM_40      // I2S data out io number
-    #define EXAMPLE_STD_DIN_IO1         GPIO_NUM_39      // I2S data in io number
+    #define EXAMPLE_STD_BCLK_IO1        GPIO_NUM_15      // I2S bit clock io number
+    #define EXAMPLE_STD_WS_IO1          GPIO_NUM_16      // I2S word select io number
+    #define EXAMPLE_STD_DOUT_IO1        GPIO_NUM_18      // I2S data out io number
+    #define EXAMPLE_STD_DIN_IO1         GPIO_NUM_17      // I2S data in io number
     #if !EXAMPLE_I2S_DUPLEX_MODE
         #define EXAMPLE_STD_BCLK_IO2    GPIO_NUM_6      // I2S bit clock io number
         #define EXAMPLE_STD_WS_IO2      GPIO_NUM_7      // I2S word select io number
