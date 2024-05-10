@@ -143,8 +143,8 @@ void pcm1862_init(){
     
     i2c_config_t conf = {
             .mode = I2C_MODE_MASTER,
-            .sda_io_num = 14,
-            .scl_io_num = 13,
+            .sda_io_num = 5,
+            .scl_io_num = 4,
             .sda_pullup_en = GPIO_PULLUP_ENABLE,
             .scl_pullup_en = GPIO_PULLUP_ENABLE,
             .master.clk_speed = 100000,
