@@ -25,12 +25,12 @@
 
 
 
-#define RE0_A_GPIO   42
-#define RE0_B_GPIO   41
-#define RE0_BTN_GPIO 40
-#define RE1_A_GPIO   39
-#define RE1_B_GPIO   38
-#define RE1_BTN_GPIO 37
+#define RE0_A_GPIO   45
+#define RE0_B_GPIO   48
+#define RE0_BTN_GPIO 47
+#define RE1_A_GPIO   21
+#define RE1_B_GPIO   20
+#define RE1_BTN_GPIO 19
 
 #define EV_QUEUE_LEN 5
 
