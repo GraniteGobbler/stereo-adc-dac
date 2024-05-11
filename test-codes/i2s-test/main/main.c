@@ -51,18 +51,22 @@ static const char *TAG = "I2S TEST";
 #define SAMPLE_RATE_HZ                  96000
 
 #define EXAMPLE_BUFF_SIZE               2048
-#define DATA_QUEUE_LEN                  3
+#define DATA_QUEUE_LEN                  5
 
 static QueueHandle_t                    read_queue;     // I2S read queue
 static QueueHandle_t                    write_queue;    // I2S write queue
 static i2s_chan_handle_t                tx_chan;        // I2S tx channel handler
 static i2s_chan_handle_t                rx_chan;        // I2S rx channel handler
 static IFX_PeakingFilter                peak_filt;      // Peaking Filter struct
+static SemaphoreHandle_t                mutex;
 
 float outVolume             =   1.0f;
-float centerFrequency_Hz    =   1.0f;
-float bandwidth_Hz          =   0.0f; 
+float centerFrequency_Hz    =   100.0f;
+float bandwidth_Hz          =   1.0f; 
 float boostCut_linear       =   1.0f;
+
+uint8_t read_data           =   0; // Pouzit namiesto queue tuto globalnu premennu, DigiKey mutex
+
 
 
 static void i2s_example_read_task(void *args)
@@ -78,64 +82,77 @@ static void i2s_example_read_task(void *args)
      * Normally there shouldn't be any delays to ensure a short polling time,
      * Otherwise the dma buffer will overflow and lead to the data lost */
     while (1) {
-        /* Read i2s data */
-        if (i2s_channel_read(rx_chan, r_buf, EXAMPLE_BUFF_SIZE, &r_bytes, 1000) == ESP_OK) {
-            printf("Read Task: i2s read %d bytes\n-----------------------------------\n", r_bytes);
-            printf("[0] %x [1] %x [2] %x [3] %x\n[4] %x [5] %x [6] %x [7] %x\n\n",
-                   r_buf[0], r_buf[1], r_buf[2], r_buf[3], r_buf[4], r_buf[5], r_buf[6], r_buf[7]);
-        } else {
-            printf("Read Task: i2s read failed\n");
+        // Take mutex
+        if (xSemaphoreTake(mutex, 0) == pdTRUE){
+
+        
+
+            /* Read i2s data */
+            if (i2s_channel_read(rx_chan, r_buf, EXAMPLE_BUFF_SIZE, &r_bytes, 1000) == ESP_OK) {
+                // xQueueSendToBack(read_queue, &r_buf, 1);   // Send read buffer to read_queue
+                read_data = r_buf;
+                printf("Read Task: i2s read %d bytes\n-----------------------------------\n", r_bytes);
+                printf("[0] %x [1] %x [2] %x [3] %x\n[4] %x [5] %x [6] %x [7] %x\n\n",
+                    r_buf[0], r_buf[1], r_buf[2], r_buf[3], r_buf[4], r_buf[5], r_buf[6], r_buf[7]);
+                
+            // Give mutex
+            xSemaphoreGive(mutex);  
+
+            } else {
+                printf("Read Task: i2s read failed\n");
+            }
+            vTaskDelay(pdMS_TO_TICKS(1000));
         }
-        vTaskDelay(pdMS_TO_TICKS(200));
+        
     }
 
-    xQueueSendToBack(read_queue, &r_buf, 1);   // Send read buffer to data_queue front
+    
 
     free(r_buf);
     vTaskDelete(NULL);
 }
 
 
-/*  Digital filtering function from Phil's Lab #89  */
-static void digital_filter_task(void *args){
+// /*  Digital filtering function from Phil's Lab #89  */
+// static void digital_filter_task(void *args){
 
-    uint8_t *filtIN_buf = (uint8_t *)calloc(1, EXAMPLE_BUFF_SIZE);
-    assert(filtIN_buf); // Check if filtIN_buf allocation success
-    uint8_t *filtOUT_buf = (uint8_t *)calloc(1, EXAMPLE_BUFF_SIZE);
-    assert(filtOUT_buf); // Check if filtOUT_buf allocation success
+//     uint8_t *filtIN_buf = (uint8_t *)calloc(1, EXAMPLE_BUFF_SIZE);
+//     assert(filtIN_buf); // Check if filtIN_buf allocation success
+//     uint8_t *filtOUT_buf = (uint8_t *)calloc(1, EXAMPLE_BUFF_SIZE);
+//     assert(filtOUT_buf); // Check if filtOUT_buf allocation success
 
-    static float leftIn, rightIn;
-    static float leftProcessed, rightProcessed;
-    static float leftOut, rightOut;
-    // static float Out;
+//     static float leftIn, rightIn;
+//     static float leftProcessed, rightProcessed;
+//     static float leftOut, rightOut;
+//     // static float Out;
 
-    xQueueReceive(read_queue, &filtIN_buf, 1);
+//     xQueueReceive(read_queue, &filtIN_buf, 1);
 
-    for (uint16_t n = 0; n < (EXAMPLE_BUFF_SIZE/2) - 1; n += 2){
+//     for (uint16_t n = 0; n < (EXAMPLE_BUFF_SIZE/2) - 1; n += 2){
         
-        /* // Convert uint_8 to float     UINT8_TO_FLOAT *  */
-        leftIn = ((float) filtIN_buf[n]);            
-        rightIn = ((float) filtIN_buf[n+1]);
+//         /* // Convert uint_8 to float     UINT8_TO_FLOAT *  */
+//         leftIn = ((float) filtIN_buf[n]);            
+//         rightIn = ((float) filtIN_buf[n+1]);
         
-        leftProcessed = IFX_PeakingFilter_Update(&peak_filt, leftIn);
-        rightProcessed = IFX_PeakingFilter_Update(&peak_filt, rightIn);
+//         leftProcessed = IFX_PeakingFilter_Update(&peak_filt, leftIn);
+//         rightProcessed = IFX_PeakingFilter_Update(&peak_filt, rightIn);
         
-        /* // Convert float to uint_8      FLOAT_TO_UINT8 *  */
-        leftOut = (uint8_t) (outVolume * leftProcessed);    
-        rightOut = (uint8_t) (outVolume * rightProcessed);
+//         /* // Convert float to uint_8      FLOAT_TO_UINT8 *  */
+//         leftOut = (uint8_t) (outVolume * leftProcessed);    
+//         rightOut = (uint8_t) (outVolume * rightProcessed);
 
-        /* Set output buffer samples */
-        filtOUT_buf[n]   = leftOut;
-        filtOUT_buf[n+1] = rightOut;
+//         /* Set output buffer samples */
+//         filtOUT_buf[n]   = leftOut;
+//         filtOUT_buf[n+1] = rightOut;
 
-    }
+//     }
     
-    xQueueSendToBack(write_queue, &filtOUT_buf, 1);
+//     xQueueSendToBack(write_queue, &filtOUT_buf, 1);
 
-    free(filtIN_buf);
-    free(filtOUT_buf);
-    vTaskDelete(NULL);
-}
+//     free(filtIN_buf);
+//     free(filtOUT_buf);
+//     vTaskDelete(NULL);
+// }
 
 
 static void i2s_example_write_task(void *args)
@@ -143,39 +160,47 @@ static void i2s_example_write_task(void *args)
     uint8_t *w_buf = (uint8_t *)calloc(1, EXAMPLE_BUFF_SIZE);
     assert(w_buf); // Check if w_buf allocation success
 
-    xQueueReceive(read_queue, &w_buf, 1);       // No filter output
-    // xQueueReceive(write_queue, &w_buf, 1);      // Filtered output
-
-    /* Assign w_buf */
-    // for (int i = 0; i < EXAMPLE_BUFF_SIZE; i += 8) {
-    //     w_buf[i]     = 0x12;
-    //     w_buf[i + 1] = 0x34;
-    //     w_buf[i + 2] = 0x56;
-    //     w_buf[i + 3] = 0x78;
-    //     w_buf[i + 4] = 0x9A;
-    //     w_buf[i + 5] = 0xBC;
-    //     w_buf[i + 6] = 0xDE;
-    //     w_buf[i + 7] = 0xF0;
-    // }
 
     size_t w_bytes = EXAMPLE_BUFF_SIZE;
 
     /* (Optional) Preload the data before enabling the TX channel, so that the valid data can be transmitted immediately */
-    while (w_bytes == EXAMPLE_BUFF_SIZE) {
-        /* Here we load the target buffer repeatedly, until all the DMA buffers are preloaded */
-        ESP_ERROR_CHECK(i2s_channel_preload_data(tx_chan, w_buf, EXAMPLE_BUFF_SIZE, &w_bytes));
-    }
+    // while (w_bytes == EXAMPLE_BUFF_SIZE) {
+    //     /* Here we load the target buffer repeatedly, until all the DMA buffers are preloaded */
+    //     ESP_ERROR_CHECK(i2s_channel_preload_data(tx_chan, w_buf, EXAMPLE_BUFF_SIZE, &w_bytes));
+    // }
 
     /* Enable the TX channel */
     ESP_ERROR_CHECK(i2s_channel_enable(tx_chan));
+
+
     while (1) {
+        
+
+        ESP_LOGE(TAG, "Write\n");
+        // if(xQueueReceive(read_queue, &w_buf, 1)==pdTRUE /*No filter output*/){
+        //     ESP_LOGI(TAG,"Queue receive OK!\n");
+        // }       
+        // xQueueReceive(write_queue, &w_buf, 1);      // Filtered output
+
+        printf("Write Task: i2s write %d bytes\n-----------------------------------\n", w_bytes);
+        printf("[0] %x [1] %x [2] %x [3] %x\n[4] %x [5] %x [6] %x [7] %x\n\n",
+                   w_buf[0], w_buf[1], w_buf[2], w_buf[3], w_buf[4], w_buf[5], w_buf[6], w_buf[7]);
+
         /* Write i2s data */
         if (i2s_channel_write(tx_chan, w_buf, EXAMPLE_BUFF_SIZE, &w_bytes, 1000) == ESP_OK) {
-            printf("Write Task: i2s write %d bytes\n", w_bytes);
+            ESP_LOGI(TAG, "I2S channel write\n");
+            
+            
+            // printf("Write Task: i2s write %d bytes\n", w_bytes);
+
+            // printf("Write Task: i2s write %d bytes\n-----------------------------------\n", w_bytes);
+            // printf("[0] %x [1] %x [2] %x [3] %x\n[4] %x [5] %x [6] %x [7] %x\n\n",
+            //        w_buf[0], w_buf[1], w_buf[2], w_buf[3], w_buf[4], w_buf[5], w_buf[6], w_buf[7]);
+
         } else {
             printf("Write Task: i2s write failed\n");
         }
-        vTaskDelay(pdMS_TO_TICKS(200));
+        vTaskDelay(pdMS_TO_TICKS(3000));
     }
     free(w_buf);
     vTaskDelete(NULL);
@@ -221,7 +246,7 @@ static void i2s_example_init_std_duplex(void)
             .bclk = EXAMPLE_STD_BCLK_IO1,
             .ws   = EXAMPLE_STD_WS_IO1,
             .dout = EXAMPLE_STD_DOUT_IO1,
-            .din  = EXAMPLE_STD_DOUT_IO1, // In duplex mode, bind output and input to a same gpio can loopback internally
+            .din  = EXAMPLE_STD_DIN_IO1, // In duplex mode, bind output and input to a same gpio can loopback internally
             .invert_flags = {
                 .mclk_inv = false,
                 .bclk_inv = false,
@@ -233,9 +258,9 @@ static void i2s_example_init_std_duplex(void)
     ESP_ERROR_CHECK(i2s_channel_init_std_mode(tx_chan, &std_cfg));
     ESP_ERROR_CHECK(i2s_channel_init_std_mode(rx_chan, &std_cfg));
 
-    // Create event queue for I2S data
-    read_queue = xQueueCreate(DATA_QUEUE_LEN, EXAMPLE_BUFF_SIZE);
-    write_queue = xQueueCreate(DATA_QUEUE_LEN, EXAMPLE_BUFF_SIZE);
+    // // Create event queue for I2S data
+    // read_queue = xQueueCreate(DATA_QUEUE_LEN, EXAMPLE_BUFF_SIZE);
+    // write_queue = xQueueCreate(DATA_QUEUE_LEN, EXAMPLE_BUFF_SIZE);
 }
 
 #else
@@ -299,20 +324,30 @@ static void i2s_example_init_std_simplex(void)
 
 void app_main(void)
 {
-#if EXAMPLE_I2S_DUPLEX_MODE
-    i2s_example_init_std_duplex();
-#else
-    i2s_example_init_std_simplex();
-#endif
+    // Create mutex before starting tasks
+    mutex = xSemaphoreCreateMutex();
+
+    // Create event queue for I2S data
+    read_queue = xQueueCreate(DATA_QUEUE_LEN, EXAMPLE_BUFF_SIZE);
+    write_queue = xQueueCreate(DATA_QUEUE_LEN, EXAMPLE_BUFF_SIZE);
+
+    ESP_LOGW(TAG,"I2C Init\n");
+    pcm1862_init(); 
+
+    ESP_LOGW(TAG,"I2S Init\n");
+    #if EXAMPLE_I2S_DUPLEX_MODE
+        i2s_example_init_std_duplex();
+    #else
+        i2s_example_init_std_simplex();
+    #endif
 
     /* Step 3: Create writing and reading task, enable and start the channels */
     xTaskCreate(i2s_example_read_task, "i2s_example_read_task", 4096, NULL, 5, NULL);
-    xTaskCreate(digital_filter_task, "digital_filter_task", 4096, NULL, 5, NULL);
+    // xTaskCreate(digital_filter_task, "digital_filter_task", 4096, NULL, 5, NULL);
     xTaskCreate(i2s_example_write_task, "i2s_example_write_task", 4096, NULL, 5, NULL);
+   
 
-    pcm1862_init();    
-
-    IFX_PeakingFilter_Init(&peak_filt, SAMPLE_RATE_HZ_F);
+    // IFX_PeakingFilter_Init(&peak_filt, SAMPLE_RATE_HZ_F);
 
 
     // while (1) {
