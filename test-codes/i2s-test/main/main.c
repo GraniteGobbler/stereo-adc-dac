@@ -53,6 +53,15 @@ static const char *TAG = "I2S TEST";
 #define EXAMPLE_BUFF_SIZE               2048
 #define DATA_QUEUE_LEN                  5
 
+#define SLOW_MODE   1
+#if SLOW_MODE
+    #define READ_TASK_DELAY                 2000   // miliseconds
+    #define WRITE_TASK_DELAY                2000
+#else
+    #define READ_TASK_DELAY                 100
+    #define WRITE_TASK_DELAY                100
+#endif
+
 static QueueHandle_t                    read_queue;     // I2S read queue
 static QueueHandle_t                    write_queue;    // I2S write queue
 static i2s_chan_handle_t                tx_chan;        // I2S tx channel handler
@@ -65,7 +74,7 @@ float centerFrequency_Hz    =   100.0f;
 float bandwidth_Hz          =   1.0f; 
 float boostCut_linear       =   1.0f;
 
-uint8_t read_data           =   0; // Pouzit namiesto queue tuto globalnu premennu, DigiKey mutex
+uint8_t *read_data; // Pouzit namiesto queue tuto globalnu premennu, DigiKey mutex
 
 
 
@@ -85,8 +94,6 @@ static void i2s_example_read_task(void *args)
         // Take mutex
         if (xSemaphoreTake(mutex, 0) == pdTRUE){
 
-        
-
             /* Read i2s data */
             if (i2s_channel_read(rx_chan, r_buf, EXAMPLE_BUFF_SIZE, &r_bytes, 1000) == ESP_OK) {
                 // xQueueSendToBack(read_queue, &r_buf, 1);   // Send read buffer to read_queue
@@ -95,13 +102,13 @@ static void i2s_example_read_task(void *args)
                 printf("[0] %x [1] %x [2] %x [3] %x\n[4] %x [5] %x [6] %x [7] %x\n\n",
                     r_buf[0], r_buf[1], r_buf[2], r_buf[3], r_buf[4], r_buf[5], r_buf[6], r_buf[7]);
                 
-            // Give mutex
-            xSemaphoreGive(mutex);  
+                // Give mutex
+                xSemaphoreGive(mutex);  
 
             } else {
                 printf("Read Task: i2s read failed\n");
             }
-            vTaskDelay(pdMS_TO_TICKS(1000));
+            vTaskDelay(pdMS_TO_TICKS(READ_TASK_DELAY));
         }
         
     }
@@ -164,43 +171,44 @@ static void i2s_example_write_task(void *args)
     size_t w_bytes = EXAMPLE_BUFF_SIZE;
 
     /* (Optional) Preload the data before enabling the TX channel, so that the valid data can be transmitted immediately */
-    // while (w_bytes == EXAMPLE_BUFF_SIZE) {
-    //     /* Here we load the target buffer repeatedly, until all the DMA buffers are preloaded */
-    //     ESP_ERROR_CHECK(i2s_channel_preload_data(tx_chan, w_buf, EXAMPLE_BUFF_SIZE, &w_bytes));
-    // }
+    while (w_bytes == EXAMPLE_BUFF_SIZE) {
+        /* Here we load the target buffer repeatedly, until all the DMA buffers are preloaded */
+        ESP_ERROR_CHECK(i2s_channel_preload_data(tx_chan, w_buf, EXAMPLE_BUFF_SIZE, &w_bytes));
+    }
 
     /* Enable the TX channel */
     ESP_ERROR_CHECK(i2s_channel_enable(tx_chan));
 
 
     while (1) {
-        
+        // Take mutex
+        if (xSemaphoreTake(mutex, 0) == pdTRUE){
 
-        ESP_LOGE(TAG, "Write\n");
-        // if(xQueueReceive(read_queue, &w_buf, 1)==pdTRUE /*No filter output*/){
-        //     ESP_LOGI(TAG,"Queue receive OK!\n");
-        // }       
-        // xQueueReceive(write_queue, &w_buf, 1);      // Filtered output
-
-        printf("Write Task: i2s write %d bytes\n-----------------------------------\n", w_bytes);
-        printf("[0] %x [1] %x [2] %x [3] %x\n[4] %x [5] %x [6] %x [7] %x\n\n",
-                   w_buf[0], w_buf[1], w_buf[2], w_buf[3], w_buf[4], w_buf[5], w_buf[6], w_buf[7]);
-
-        /* Write i2s data */
-        if (i2s_channel_write(tx_chan, w_buf, EXAMPLE_BUFF_SIZE, &w_bytes, 1000) == ESP_OK) {
-            ESP_LOGI(TAG, "I2S channel write\n");
+            // ESP_LOGE(TAG, "Write\n");
+            // if(xQueueReceive(read_queue, &w_buf, 1)==pdTRUE /*No filter output*/){
+            //     ESP_LOGI(TAG,"Queue receive OK!\n");
+            // }       
+            // xQueueReceive(write_queue, &w_buf, 1);      // Filtered output
             
+
+            w_buf = read_data;
+            /* Write i2s data */
+            if (i2s_channel_write(tx_chan, w_buf, EXAMPLE_BUFF_SIZE, &w_bytes, 1000) == ESP_OK) {
+                
+                // ESP_LOGI(TAG, "I2S channel write\n");
+                
+                printf("Write Task: i2s write %d bytes\n-----------------------------------\n", w_bytes);
+                printf("[0] %x [1] %x [2] %x [3] %x\n[4] %x [5] %x [6] %x [7] %x\n\n",
+                       w_buf[0], w_buf[1], w_buf[2], w_buf[3], w_buf[4], w_buf[5], w_buf[6], w_buf[7]);
             
-            // printf("Write Task: i2s write %d bytes\n", w_bytes);
+                // Give mutex
+                xSemaphoreGive(mutex); 
 
-            // printf("Write Task: i2s write %d bytes\n-----------------------------------\n", w_bytes);
-            // printf("[0] %x [1] %x [2] %x [3] %x\n[4] %x [5] %x [6] %x [7] %x\n\n",
-            //        w_buf[0], w_buf[1], w_buf[2], w_buf[3], w_buf[4], w_buf[5], w_buf[6], w_buf[7]);
-
-        } else {
-            printf("Write Task: i2s write failed\n");
+            } else {
+                printf("Write Task: i2s write failed\n");
+            }
+            vTaskDelay(pdMS_TO_TICKS(WRITE_TASK_DELAY));
         }
-        vTaskDelay(pdMS_TO_TICKS(3000));
     }
     free(w_buf);
     vTaskDelete(NULL);
