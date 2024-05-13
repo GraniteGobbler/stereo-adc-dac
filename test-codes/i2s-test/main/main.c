@@ -101,13 +101,14 @@ static void i2s_example_read_task(void *args)
                 printf("Read Task: i2s read %d bytes\n-----------------------------------\n", r_bytes);
                 printf("[0] %x [1] %x [2] %x [3] %x\n[4] %x [5] %x [6] %x [7] %x\n\n",
                     r_buf[0], r_buf[1], r_buf[2], r_buf[3], r_buf[4], r_buf[5], r_buf[6], r_buf[7]);
-                
-                // Give mutex
-                xSemaphoreGive(mutex);  
+                 
 
             } else {
                 printf("Read Task: i2s read failed\n");
             }
+            // Give mutex
+            xSemaphoreGive(mutex); 
+
             vTaskDelay(pdMS_TO_TICKS(READ_TASK_DELAY));
         }
         
@@ -201,12 +202,14 @@ static void i2s_example_write_task(void *args)
                 printf("[0] %x [1] %x [2] %x [3] %x\n[4] %x [5] %x [6] %x [7] %x\n\n",
                        w_buf[0], w_buf[1], w_buf[2], w_buf[3], w_buf[4], w_buf[5], w_buf[6], w_buf[7]);
             
-                // Give mutex
-                xSemaphoreGive(mutex); 
+                 
 
             } else {
                 printf("Write Task: i2s write failed\n");
             }
+            // Give mutex
+            xSemaphoreGive(mutex);
+
             vTaskDelay(pdMS_TO_TICKS(WRITE_TASK_DELAY));
         }
     }
