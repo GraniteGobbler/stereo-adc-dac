@@ -53,7 +53,7 @@ static const char *TAG = "I2S TEST";
 #define EXAMPLE_BUFF_SIZE               2048
 #define DATA_QUEUE_LEN                  5
 
-#define SLOW_MODE   1
+#define SLOW_MODE   0
 #if SLOW_MODE
     #define READ_TASK_DELAY                 2000   // miliseconds
     #define WRITE_TASK_DELAY                2000
@@ -172,10 +172,10 @@ static void i2s_example_write_task(void *args)
     size_t w_bytes = EXAMPLE_BUFF_SIZE;
 
     /* (Optional) Preload the data before enabling the TX channel, so that the valid data can be transmitted immediately */
-    while (w_bytes == EXAMPLE_BUFF_SIZE) {
-        /* Here we load the target buffer repeatedly, until all the DMA buffers are preloaded */
-        ESP_ERROR_CHECK(i2s_channel_preload_data(tx_chan, w_buf, EXAMPLE_BUFF_SIZE, &w_bytes));
-    }
+    // while (w_bytes == EXAMPLE_BUFF_SIZE) {
+    //     /* Here we load the target buffer repeatedly, until all the DMA buffers are preloaded */
+    //     ESP_ERROR_CHECK(i2s_channel_preload_data(tx_chan, w_buf, EXAMPLE_BUFF_SIZE, &w_bytes));
+    // }
 
     /* Enable the TX channel */
     ESP_ERROR_CHECK(i2s_channel_enable(tx_chan));
