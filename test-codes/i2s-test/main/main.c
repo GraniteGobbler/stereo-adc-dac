@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "driver/i2s_std.h"
@@ -15,6 +16,7 @@
 #include "sdkconfig.h"
 #include "./pcm1862/pcm1862.c"
 #include "./IFX_PeakingFilter/IFX_PeakingFilter.h"
+#include "./RC_Filter/RC_Filter.h"
 
 static const char *TAG = "I2S TEST";
 static const char err_reason[][30] = {"input param is invalid",
@@ -29,11 +31,22 @@ static const char err_reason[][30] = {"input param is invalid",
 #define EXAMPLE_STD_DIN_IO1 GPIO_NUM_17  // I2S data in io number
 
 #define SAMPLE_RATE_HZ                  96000
+#define SAMPLE_RATE_HZ_F                96000.0f
 
-#define EXAMPLE_BUFF_SIZE               2048
+#define EXAMPLE_BUFF_SIZE               256
+
+// #define UINT32_TO_FLOAT                 1.0f/(65536.0f)
+// #define FLOAT_TO_UINT32                 65536.0f
 
 static i2s_chan_handle_t                tx_chan;        // I2S tx channel handler
 static i2s_chan_handle_t                rx_chan;        // I2S rx channel handler
+static IFX_PeakingFilter                peak_filt;      // Peaking Filter struct
+static RC_Filter                        lpf;      // Peaking Filter struct
+
+float outVolume             =   1.0;
+float fc                    =   10000.0;
+float B                     =   100.0; 
+float g                     =   0.0001;
 
 
 static esp_err_t i2s_example_init_std_duplex(void)
@@ -73,26 +86,70 @@ static esp_err_t i2s_example_init_std_duplex(void)
 
 static void i2s_echo(void *args)
 {
-    u_int32_t *read_data = malloc(EXAMPLE_BUFF_SIZE);
-    if (!read_data) {
-        ESP_LOGE(TAG, "[echo] No memory for read data buffer");
+    int32_t *filtIN_buf = malloc(EXAMPLE_BUFF_SIZE);
+    if (!filtIN_buf) {
+        ESP_LOGE(TAG, "[echo] No memory for filterIn data buffer");
         abort();
     }
+    int32_t *filtOUT_buf = malloc(EXAMPLE_BUFF_SIZE);
+    if (!filtOUT_buf) {
+        ESP_LOGE(TAG, "[echo] No memory for filterOut data buffer");
+        abort();
+    }
+
+    static float leftIn, rightIn;
+    static float leftProcessed, rightProcessed;
+    static int32_t leftOut, rightOut;
+
     esp_err_t ret = ESP_OK;
     size_t bytes_read = 0;
     size_t bytes_write = 0;
+
+
     ESP_LOGI(TAG, "[echo] Echo start");
 
     while (1) {
-        memset(read_data, 0, EXAMPLE_BUFF_SIZE);    /* !!! Toto treba mat na pozore !!! */
+        memset(filtIN_buf, 0, EXAMPLE_BUFF_SIZE);
+        memset(filtOUT_buf, 0, EXAMPLE_BUFF_SIZE);
+
         /* Read sample data from mic */
-        ret = i2s_channel_read(rx_chan, read_data, EXAMPLE_BUFF_SIZE, &bytes_read, 1000);
+        ret = i2s_channel_read(rx_chan, filtIN_buf, EXAMPLE_BUFF_SIZE, &bytes_read, 1000);
         if (ret != ESP_OK) {
             ESP_LOGE(TAG, "[echo] i2s read failed, %s", err_reason[ret == ESP_ERR_TIMEOUT]);
             abort();
         }
+
+        // filtOUT_buf = filtIN_buf;
+
+        for (int32_t n = 0; n < (EXAMPLE_BUFF_SIZE) - 1; n += 2){
+            
+            /* // Convert uint_32 to float     UINT32_TO_FLOAT *  */
+            leftIn = (float)filtIN_buf[n];            
+            rightIn = (float)filtIN_buf[n+1];
+            
+            leftProcessed = IFX_PeakingFilter_Update(&peak_filt, leftIn);
+            // rightProcessed = IFX_PeakingFilter_Update(&peak_filt, rightIn);
+            rightProcessed = rightIn;
+            // leftProcessed = RC_Filter_Update(&lpf, leftIn);
+            // rightProcessed = RC_Filter_Update(&lpf, rightIn);
+            
+            /* // Convert float to uint_32      FLOAT_TO_UINT32 *  */
+            leftOut = (int32_t)(leftProcessed);    
+            rightOut = (int32_t)(rightProcessed);
+
+            /* Set output buffer samples */
+            filtOUT_buf[n]   = leftOut;
+            filtOUT_buf[n+1] = rightOut;
+
+            // printf("%lu", filtIN_buf[n]);
+            // printf("  ");
+
+        }
+
+        // printf("\n");
+
         /* Write sample data to earphone */
-        ret = i2s_channel_write(tx_chan, read_data, EXAMPLE_BUFF_SIZE, &bytes_write, 1000);
+        ret = i2s_channel_write(tx_chan, filtOUT_buf, EXAMPLE_BUFF_SIZE, &bytes_write, 1000);
         if (ret != ESP_OK) {
             ESP_LOGE(TAG, "[echo] i2s write failed, %s", err_reason[ret == ESP_ERR_TIMEOUT]);
             abort();
@@ -100,6 +157,8 @@ static void i2s_echo(void *args)
         if (bytes_read != bytes_write) {
             ESP_LOGW(TAG, "[echo] %d bytes read but only %d bytes are written", bytes_read, bytes_write);
         }
+
+
     }
     vTaskDelete(NULL);
 }
@@ -118,6 +177,13 @@ void app_main(void)
         ESP_LOGI(TAG, "i2s driver init success");
     }
 
+
+    IFX_PeakingFilter_Init(&peak_filt, SAMPLE_RATE_HZ_F);
+    IFX_PeakingFilter_SetParameters(&peak_filt, fc, B, g);
+    // RC_Filter_Init(&lpf, fc, SAMPLE_RATE_HZ_F);
+
+
     /* Echo the sound from MIC in echo mode */
     xTaskCreate(i2s_echo, "i2s_echo", 8192, NULL, 5, NULL);
+
 }

@@ -26,18 +26,20 @@ void IFX_PeakingFilter_SetParameters(IFX_PeakingFilter *filt, float centerFreque
     /* Convert Hz to rad/s, pre-warp, multiply by sampling time (wc*T = 2 * tan(wc*T/2)) */
     float wcT = 2.0f * tanf(M_PI * centerFrequency_Hz * filt->sampleTime_s);
 
-    /* Compute quality factor (Q = fc / B) */
+    /* Compute quality factor (Q = B / fc) */
+    // float Q = bandwidth_Hz / centerFrequency_Hz;    // ! NOT PREWARPED ! 
     float Q = centerFrequency_Hz / bandwidth_Hz;    // ! NOT PREWARPED ! 
 
     /* Compute filter coefficients */
     filt->a[0] = 4.0f + 2.0f * (boostCut_linear / Q) * wcT + wcT * wcT;
-    filt->a[2] = 2.0f * wcT * wcT - 8.0f;
-    filt->a[1] = 4.0f - 2.0f * (boostCut_linear / Q) * wcT + wcT * wcT;
+    filt->a[1] = 2.0f * wcT * wcT - 8.0f;
+    filt->a[2] = 4.0f - 2.0f * (boostCut_linear / Q) * wcT + wcT * wcT;
 
-    filt->b[0] = 1.0f / (4.0f + 2.0f / Q * wcT + wcT * wcT);    // Note: 1 / b0
-    filt->b[2] = -(2.0f * wcT * wcT - 8.0f);                    // Note: -b1
-    filt->b[1] = -(4.0f - 2.0f / Q * wcT + wcT * wcT);          // Note: -b2
+    filt->b[0] = 1.0f / (4.0f + (2.0f / Q) * wcT + wcT * wcT);    // Note: 1 / b0
+    filt->b[1] = -(2.0f * wcT * wcT - 8.0f);                    // Note: -b1
+    filt->b[2] = -(4.0f - (2.0f / Q) * wcT + wcT * wcT);          // Note: -b2
 }
+
 
 /* 2nd order peaking filter, 3 sample input, 3 sampe output. Two samples would suffice. */
 float IFX_PeakingFilter_Update(IFX_PeakingFilter *filt, float in){
@@ -56,5 +58,6 @@ float IFX_PeakingFilter_Update(IFX_PeakingFilter *filt, float in){
     
     /* Return current output sample */
     return (filt->y[0]);
+    // return (in);
     
 }

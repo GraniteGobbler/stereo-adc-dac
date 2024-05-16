@@ -28,4 +28,5 @@ void IFX_PeakingFilter_Init(IFX_PeakingFilter *filt, float sampleRate_Hz);
 void IFX_PeakingFilter_SetParameters(IFX_PeakingFilter *filt, float centerFrequency_Hz, float bandwidth_Hz, float boostCut_linear);
 float IFX_PeakingFilter_Update(IFX_PeakingFilter *filt, float in);
 
+
 #endif
