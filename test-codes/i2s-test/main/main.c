@@ -29,6 +29,9 @@ static const char err_reason[][30] = {"input param is invalid",
 #define EXAMPLE_STD_WS_IO1 GPIO_NUM_16   // I2S word select io number
 #define EXAMPLE_STD_DOUT_IO1 GPIO_NUM_18 // I2S data out io number
 #define EXAMPLE_STD_DIN_IO1 GPIO_NUM_17  // I2S data in io number
+#define DA_SMUTE GPIO_NUM_46
+#define DA_PWR_DOWN GPIO_NUM_9
+#define AMP_ENABLE GPIO_NUM_10
 
 #define SAMPLE_RATE_HZ                  96000
 #define SAMPLE_RATE_HZ_F                96000.0f
@@ -40,13 +43,15 @@ static const char err_reason[][30] = {"input param is invalid",
 
 static i2s_chan_handle_t                tx_chan;        // I2S tx channel handler
 static i2s_chan_handle_t                rx_chan;        // I2S rx channel handler
-static IFX_PeakingFilter                peak_filt;      // Peaking Filter struct
-static RC_Filter                        lpf;      // Peaking Filter struct
+static IFX_PeakingFilter                peak_filt_r;    // Peaking Filter struct
+static IFX_PeakingFilter                peak_filt_l;    // Peaking Filter struct
+// static RC_Filter                        lpf;      // Peaking Filter struct
 
-float outVolume             =   1.0;
-float fc                    =   10000.0;
-float B                     =   100.0; 
-float g                     =   0.0001;
+// Default Filter Config
+float volume                =   1.0f;
+float fc                    =   1000.0f;
+float B                     =   10.0f;
+float g                     =   1.0f;
 
 
 static esp_err_t i2s_example_init_std_duplex(void)
@@ -80,7 +85,7 @@ static esp_err_t i2s_example_init_std_duplex(void)
     ESP_ERROR_CHECK(i2s_channel_enable(rx_chan));
 
     return ESP_OK;
-    
+
 }
 
 
@@ -122,20 +127,22 @@ static void i2s_echo(void *args)
         // filtOUT_buf = filtIN_buf;
 
         for (int32_t n = 0; n < (EXAMPLE_BUFF_SIZE) - 1; n += 2){
-            
+
             /* // Convert uint_32 to float     UINT32_TO_FLOAT *  */
-            leftIn = (float)filtIN_buf[n];            
+            leftIn = (float)filtIN_buf[n];
             rightIn = (float)filtIN_buf[n+1];
-            
-            leftProcessed = IFX_PeakingFilter_Update(&peak_filt, leftIn);
-            // rightProcessed = IFX_PeakingFilter_Update(&peak_filt, rightIn);
-            rightProcessed = rightIn;
+
+            leftProcessed = IFX_PeakingFilter_Update(&peak_filt_l, leftIn);
+            rightProcessed = IFX_PeakingFilter_Update(&peak_filt_r, rightIn);
+            // leftProcessed = leftIn;
+            // rightProcessed = rightIn;
+
             // leftProcessed = RC_Filter_Update(&lpf, leftIn);
             // rightProcessed = RC_Filter_Update(&lpf, rightIn);
-            
+
             /* // Convert float to uint_32      FLOAT_TO_UINT32 *  */
-            leftOut = (int32_t)(leftProcessed);    
-            rightOut = (int32_t)(rightProcessed);
+            leftOut = (int32_t)(leftProcessed * volume);
+            rightOut = (int32_t)(rightProcessed * volume);
 
             /* Set output buffer samples */
             filtOUT_buf[n]   = leftOut;
@@ -165,8 +172,16 @@ static void i2s_echo(void *args)
 
 void app_main(void)
 {
+    gpio_set_direction(DA_SMUTE, GPIO_MODE_OUTPUT);
+    gpio_set_direction(DA_PWR_DOWN, GPIO_MODE_OUTPUT);
+    gpio_set_direction(AMP_ENABLE, GPIO_MODE_OUTPUT);
+
+    gpio_set_level(DA_SMUTE, 0); // DA_SMUTE - L
+    gpio_set_level(DA_PWR_DOWN, 1); // DA_PWR_DOWN - H
+    gpio_set_level(AMP_ENABLE, 1); // AMP_ENABLE - H
+
     ESP_LOGW(TAG,"I2C Init\n");
-    pcm1862_init(); 
+    pcm1862_init();
 
     ESP_LOGW(TAG,"I2S Init\n");
     /* Initialize i2s peripheral */
@@ -178,8 +193,10 @@ void app_main(void)
     }
 
 
-    IFX_PeakingFilter_Init(&peak_filt, SAMPLE_RATE_HZ_F);
-    IFX_PeakingFilter_SetParameters(&peak_filt, fc, B, g);
+    IFX_PeakingFilter_Init(&peak_filt_r, SAMPLE_RATE_HZ_F);
+    IFX_PeakingFilter_Init(&peak_filt_l, SAMPLE_RATE_HZ_F);
+    IFX_PeakingFilter_SetParameters(&peak_filt_r, fc, B, g);
+    IFX_PeakingFilter_SetParameters(&peak_filt_l, fc, B, g);
     // RC_Filter_Init(&lpf, fc, SAMPLE_RATE_HZ_F);
 
 

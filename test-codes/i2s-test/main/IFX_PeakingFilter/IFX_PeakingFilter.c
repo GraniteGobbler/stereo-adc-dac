@@ -35,9 +35,9 @@ void IFX_PeakingFilter_SetParameters(IFX_PeakingFilter *filt, float centerFreque
     filt->a[1] = 2.0f * wcT * wcT - 8.0f;
     filt->a[2] = 4.0f - 2.0f * (boostCut_linear / Q) * wcT + wcT * wcT;
 
-    filt->b[0] = 1.0f / (4.0f + (2.0f / Q) * wcT + wcT * wcT);    // Note: 1 / b0
+    filt->b[0] = 1.0f / (4.0f + 2.0f * (1.0f / Q) * wcT + wcT * wcT);    // Note: 1 / b0
     filt->b[1] = -(2.0f * wcT * wcT - 8.0f);                    // Note: -b1
-    filt->b[2] = -(4.0f - (2.0f / Q) * wcT + wcT * wcT);          // Note: -b2
+    filt->b[2] = -(4.0f - 2.0f * (1.0f / Q) * wcT + wcT * wcT);          // Note: -b2
 }
 
 
