@@ -131,13 +131,16 @@ static void i2s_process(void *args)
 
         /* Apply filter */
         for (int32_t n = 0; n < (BUFF_SIZE) - 1; n += 2){
-   
+            
+            /* Conver int to float */
             leftIn = (float)filtIN_buf[n];
             rightIn = (float)filtIN_buf[n+1];
-
+            
+            /* Process samples via filter */
             leftProcessed = ParamEQ_Update(&peak_filt_l, leftIn);
             rightProcessed = ParamEQ_Update(&peak_filt_r, rightIn);
-
+            
+            /* Conver float to int */
             leftOut = (int32_t)(leftProcessed * volume);
             rightOut = (int32_t)(rightProcessed * volume);
 

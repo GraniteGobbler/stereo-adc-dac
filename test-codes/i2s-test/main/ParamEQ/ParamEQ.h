@@ -16,10 +16,10 @@ typedef struct{
     /* Filter outputs */
     float y[3];
 
-    /* x[n] coeffs */
+    /* y[n] coeffs */
     float a[3];
 
-    /* y[n] coeffs */
+    /* x[n] coeffs */
     float b[3];
 
 }   ParamEQ;
