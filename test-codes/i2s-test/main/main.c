@@ -14,7 +14,7 @@
 #include "driver/gpio.h"
 #include "esp_check.h"
 #include "sdkconfig.h"
-#include "./pcm1862/pcm1862.c"
+#include "./pcm1862/pcm1862.h"
 #include "./ParamEQ/ParamEQ.h"
 
 static const char *TAG = "I2S TEST";
@@ -37,8 +37,6 @@ static const char err_reason[][30] = {"input param is invalid",
 
 #define BUFF_SIZE               256
 
-// #define UINT32_TO_FLOAT                 1.0f/(65536.0f)
-// #define FLOAT_TO_UINT32                 65536.0f
 
 static i2s_chan_handle_t                tx_chan;        // I2S tx channel handler
 static i2s_chan_handle_t                rx_chan;        // I2S rx channel handler

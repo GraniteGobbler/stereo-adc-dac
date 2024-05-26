@@ -21,6 +21,10 @@
         "stdint.h": "c",
         "freertos.h": "c",
         "math.h": "c",
-        "example_config.h": "c"
+        "example_config.h": "c",
+        "task.h": "c",
+        "gpio.h": "c",
+        "sdkconfig.h": "c",
+        "parameq.h": "c"
     }
 }

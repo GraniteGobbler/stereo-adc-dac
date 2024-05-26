@@ -79,7 +79,7 @@ struct labels entries = {{"Low Pass Filter","High Pass Filter"}};
 
 
 
-void test(void *arg)
+void encoder_task(void *arg)
 {
     // Create event queue for rotary encoders
     event_queue = xQueueCreate(EV_QUEUE_LEN, sizeof(rotary_encoder_event_t));
@@ -190,7 +190,7 @@ void test(void *arg)
 
 void app_main() {
 
-    xTaskCreate(test, TAG, configMINIMAL_STACK_SIZE * 8, NULL, 5, NULL);
+    xTaskCreate(encoder_task, TAG, configMINIMAL_STACK_SIZE * 8, NULL, 5, NULL);
 
     vTaskDelay(pdMS_TO_TICKS(3000));
     lvgl_init();
