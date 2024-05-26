@@ -1,6 +1,0 @@
-[submodule "test-codes/esp-usb-audio-test/tinyusb"]
-	path = test-codes/esp-usb-audio-test/tinyusb
-	url = https://github.com/hathach/tinyusb
-[submodule "test-codes/esp-usb-audio-test2/tinyusb"]
-	path = test-codes/esp-usb-audio-test2/tinyusb
-	url = https://github.com/hathach/tinyusb
