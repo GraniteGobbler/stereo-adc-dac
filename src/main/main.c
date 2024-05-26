@@ -181,12 +181,12 @@ static void i2s_process(void *args)
 {
     int32_t *filtIN_buf = malloc(BUFF_SIZE);
     if (!filtIN_buf) {
-        ESP_LOGE(TAG, "[echo] No memory for filterIn data buffer");
+        ESP_LOGE("i2s_process", "No memory for filterIn data buffer");
         abort();
     }
     int32_t *filtOUT_buf = malloc(BUFF_SIZE);
     if (!filtOUT_buf) {
-        ESP_LOGE(TAG, "[echo] No memory for filterOut data buffer");
+        ESP_LOGE("i2s_process", "No memory for filterOut data buffer");
         abort();
     }
 
@@ -199,7 +199,7 @@ static void i2s_process(void *args)
     size_t bytes_write = 0;
 
 
-    ESP_LOGI(TAG, "[echo] Echo start");
+    ESP_LOGI("i2s_process", "i2s_process start");
 
     while (1) {
         memset(filtIN_buf, 0, BUFF_SIZE);
@@ -208,7 +208,7 @@ static void i2s_process(void *args)
         /* Read I2S data */
         ret = i2s_channel_read(rx_chan, filtIN_buf, BUFF_SIZE, &bytes_read, 1000);
         if (ret != ESP_OK) {
-            ESP_LOGE(TAG, "[echo] i2s read failed, %s", err_reason[ret == ESP_ERR_TIMEOUT]);
+            ESP_LOGE("i2s_process", "i2s read failed, %s", err_reason[ret == ESP_ERR_TIMEOUT]);
             abort();
         }
 
@@ -236,11 +236,11 @@ static void i2s_process(void *args)
         /* Write I2S data */
         ret = i2s_channel_write(tx_chan, filtOUT_buf, BUFF_SIZE, &bytes_write, 1000);
         if (ret != ESP_OK) {
-            ESP_LOGE(TAG, "[echo] i2s write failed, %s", err_reason[ret == ESP_ERR_TIMEOUT]);
+            ESP_LOGE("i2s_process", "i2s write failed, %s", err_reason[ret == ESP_ERR_TIMEOUT]);
             abort();
         }
         if (bytes_read != bytes_write) {
-            ESP_LOGW(TAG, "[echo] %d bytes read but only %d bytes are written", bytes_read, bytes_write);
+            ESP_LOGW("i2s_process", "%d bytes read but only %d bytes are written", bytes_read, bytes_write);
         }
 
     }
@@ -321,7 +321,7 @@ void encoder_task(void *arg)
             case RE_ET_CHANGED:
                 // enID = sender->index;
                 if (enID == 0){
-                    en0val -= e.diff;
+                    en0val += e.diff;
                     menuCon.diff = e.diff;
 
                     menuCon.scroller -= menuCon.diff;
@@ -348,7 +348,7 @@ void encoder_task(void *arg)
                     ESP_LOGI("encoder_task", "Encoder %d: %d", (int)enID, (int)en0val);
                 }
                 else if (enID == 1){
-                    en1val -= e.diff;
+                    en1val += e.diff;
                     // ESP_LOGI(TAG, "Value = %" PRIi32, en1val);
                     ESP_LOGI("encoder_task", "Encoder %d: %d", (int)enID, (int)en1val);
                 }
@@ -363,56 +363,7 @@ void encoder_task(void *arg)
 
 
 void app_main() {
-
-    /* ------- Set GPIO levels for DAC and AMP ------- */
-    ESP_LOGW(TAG,"GPIO init\n");
-    gpio_set_direction(DA_SMUTE, GPIO_MODE_OUTPUT);
-    gpio_set_direction(DA_PWR_DOWN, GPIO_MODE_OUTPUT);
-    gpio_set_direction(AMP_ENABLE, GPIO_MODE_OUTPUT);
-
-    gpio_set_level(DA_SMUTE, 0); // DA_SMUTE - L
-    gpio_set_level(DA_PWR_DOWN, 1); // DA_PWR_DOWN - H
-    gpio_set_level(AMP_ENABLE, 1); // AMP_ENABLE - H
-    /*-------------------------------------------------*/
-
-
-
-    /* ----------- Initialize I2C and ADC ------------ */
-    ESP_LOGW(TAG,"ADC Init\n");
-    pcm1862_init();
-    /*-------------------------------------------------*/
-
-
-
-    /* ---------------- Initialize I2S --------------- */
-    ESP_LOGW(TAG,"I2S Init\n");
-    if (i2s_init_std_duplex() != ESP_OK) {
-        ESP_LOGE(TAG, "i2s driver init failed");
-        abort();
-    } else {
-        ESP_LOGI(TAG, "i2s driver init success");
-    }
-    /*-------------------------------------------------*/
-
-
-
-    /* ------------ Initialize ParamFilter ----------- */
-    ESP_LOGW(TAG,"ParamFilter Init\n");
-    ParamEQ_Init(&peak_filt_r, SAMPLE_RATE_HZ_F);
-    ParamEQ_Init(&peak_filt_l, SAMPLE_RATE_HZ_F);
-    ParamEQ_SetParameters(&peak_filt_r, fc, B, g);
-    ParamEQ_SetParameters(&peak_filt_l, fc, B, g);
-    /*-------------------------------------------------*/
-
-
-
-    /* ----------------- Create tasks ---------------- */
-    xTaskCreatePinnedToCore(i2s_process, "i2s_process", 8192, NULL, 5, NULL, 0); // Assigned to CPU0
-    xTaskCreatePinnedToCore(encoder_task, "encoder_task", configMINIMAL_STACK_SIZE * 8, NULL, 4, NULL, 1); // Assigned to CPU1
-    /*-------------------------------------------------*/
-
-
-    
+        
     /* ---------------- Initialize LVGL -------------- */
     vTaskDelay(pdMS_TO_TICKS(3000));
     lvgl_init();
@@ -427,6 +378,82 @@ void app_main() {
     /*-------------------------------------------------*/
 
 
+    vTaskDelay(pdMS_TO_TICKS(100));
+
+
+    /* ------- Set GPIO levels for DAC and AMP ------- */
+    ESP_LOGW(TAG,"GPIO init\n");
+    gpio_set_direction(DA_SMUTE, GPIO_MODE_OUTPUT);
+    gpio_set_direction(DA_PWR_DOWN, GPIO_MODE_OUTPUT);
+    gpio_set_direction(AMP_ENABLE, GPIO_MODE_OUTPUT);
+
+    gpio_set_level(DA_SMUTE, 0); // DA_SMUTE - L
+    gpio_set_level(DA_PWR_DOWN, 1); // DA_PWR_DOWN - H
+    gpio_set_level(AMP_ENABLE, 1); // AMP_ENABLE - H
+    /*-------------------------------------------------*/
+
+
+    vTaskDelay(pdMS_TO_TICKS(100));
+
+
+    /* ----------- Initialize I2C and ADC ------------ */
+    ESP_LOGW(TAG,"ADC Init\n");
+    pcm1862_init();
+    /*-------------------------------------------------*/
+
+
+    vTaskDelay(pdMS_TO_TICKS(100));
+
+
+    /* ---------------- Initialize I2S --------------- */
+    ESP_LOGW(TAG,"I2S Init\n");
+    if (i2s_init_std_duplex() != ESP_OK) {          // Verify init success, abort if failed
+        ESP_LOGE(TAG, "i2s driver init failed");
+        abort();
+    } else {
+        ESP_LOGI(TAG, "i2s driver init success");
+    }
+    /*-------------------------------------------------*/
+
+
+    vTaskDelay(pdMS_TO_TICKS(100));
+
+
+    /* ------------ Initialize ParamFilter ----------- */
+    ESP_LOGW(TAG,"ParamFilter Init\n");
+    ParamEQ_Init(&peak_filt_r, SAMPLE_RATE_HZ_F);
+    ParamEQ_Init(&peak_filt_l, SAMPLE_RATE_HZ_F);
+    ParamEQ_SetParameters(&peak_filt_r, fc, B, g);
+    ParamEQ_SetParameters(&peak_filt_l, fc, B, g);
+    /*-------------------------------------------------*/
+
+
+    vTaskDelay(pdMS_TO_TICKS(100));
+
+
+    /* ----------------- Create tasks ---------------- */
+    if (xTaskCreatePinnedToCore(encoder_task, "encoder_task", configMINIMAL_STACK_SIZE * 8, NULL, 5, NULL, 1) != pdPASS){ 
+        ESP_LOGE(TAG,"encoder_task init fail!\n");
+        abort();    // Verify task creation success, abort if failed
+    } else {
+        ESP_LOGW(TAG,"encoder_task init success, assigned to CPU1\n"); // Assigned to CPU1
+    }
+
+    vTaskDelay(pdMS_TO_TICKS(1000));
+
+    if (xTaskCreatePinnedToCore(i2s_process, "i2s_process", 8192, NULL, 5, NULL, 0) != pdPASS){ 
+        ESP_LOGE(TAG,"i2s_process init fail!\n");
+        abort();    // Verify task creation success, abort if failed
+    } else {
+        ESP_LOGW(TAG,"i2s_process init success, assigned to CPU0\n"); // Assigned to CPU0
+    }
+    /*-------------------------------------------------*/
+
+
+
+
+
+    vTaskDelay(pdMS_TO_TICKS(100));
 
     /* - While loop for menu navigaiton via encoders - */
     while (true) {
@@ -436,9 +463,9 @@ void app_main() {
             menuCon.change = 0;
             lv_roller_set_selected(ui_Roller1, menuCon.scroller, LV_ANIM_OFF);      // Roller entry selector
         }
-        else if (menuCon.id == 1 && menuCon.change){
-            lv_label_set_text(ui_Label2, entries.filtType[menuCon.scroller]);
-        }
+        // else if (menuCon.id == 1 && menuCon.change){
+        //     lv_label_set_text(ui_Label2, entries.filtType[menuCon.scroller]);
+        // }
         if (menuCon.click){
             menuCon.click = 0;
             if (menuCon.id == 0 && menuCon.scroller == 1){      // Selecting "Filter Type" entry

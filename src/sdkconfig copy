@@ -467,14 +467,6 @@ CONFIG_PARTITION_TABLE_MD5=y
 # end of Partition Table
 
 #
-# I2S STD Example Configuration
-#
-CONFIG_USE_DUPLEX=y
-# CONFIG_USE_SIMPLEX is not set
-# end of I2S STD Example Configuration
-
-
-#
 # Compiler options
 #
 CONFIG_COMPILER_OPTIMIZATION_DEFAULT=y

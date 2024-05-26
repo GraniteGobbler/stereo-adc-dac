@@ -19,9 +19,10 @@ extern "C" {
 void ui_Screen1_screen_init(void);
 extern lv_obj_t * ui_Screen1;
 extern lv_obj_t * ui_Roller1;
-extern lv_obj_t * ui_Label2;
+extern lv_obj_t * ui_Roller2;
 extern lv_obj_t * ui_Image1;
 extern lv_obj_t * ui_Panel1;
+extern lv_obj_t * ui_Arc1;
 extern lv_obj_t * ui____initial_actions0;
 
 
